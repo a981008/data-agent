@@ -28,8 +28,8 @@ docker-compose up -d
 | 变量 | 说明 | 示例 |
 |------|------|------|
 | `MYSQL_ROOT_PASSWORD` | MySQL root 密码 | `your_root_password_here` |
-| `MYSQL_PASSWORD` | MySQL data_agent 用户密码 | `your_password_here` |
 | `MYSQL_USER` | MySQL 应用用户名 | `your_user_here` |
+| `MYSQL_PASSWORD` | MySQL 应用用户密码 | `your_password_here` |
 | `OPENAI_API_KEY` | OpenAI API 密钥 | `your_api_key_here` |
 | `COMPOSE_FILE` | docker-compose 配置文件路径 | `docker/docker-compose.yaml` |
 
@@ -134,7 +134,7 @@ volumes:
 |------|------|------|
 | `01-dw.sql` | 1 | 创建 `dw` 数据库及事实/维度表（fact_order, dim_customer 等） |
 | `02-meta.sql` | 2 | 创建 `meta` 数据库及元数据表（table_info, column_info 等） |
-| `03-grant.sh` | 3 | 授权 `data_agent` 用户访问 `dw` 和 `meta` 数据库 |
+| `03-grant.sh` | 3 | 授权 应用用户访问 `dw` 和 `meta` 数据库 |
 
 ### Milvus 配置
 
