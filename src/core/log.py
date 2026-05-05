@@ -1,4 +1,5 @@
 import sys
+import traceback
 from pathlib import Path
 from loguru import logger
 
@@ -20,9 +21,12 @@ def _configure_logger():
         return
     try:
         from src.conf.app_config import app_config
+
         if app_config.logging.console.enable:
             logger.add(
-                sink=sys.stdout, level=app_config.logging.console.level, format=log_format
+                sink=sys.stdout,
+                level=app_config.logging.console.level,
+                format=log_format,
             )
         if app_config.logging.file.enable:
             path = Path(app_config.logging.file.path)

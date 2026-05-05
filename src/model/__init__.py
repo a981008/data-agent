@@ -1,6 +1,6 @@
-from src.model.table_info import TableInfo
-from src.model.column_info import ColumnInfo
-from src.model.metric_info import MetricInfo
-from src.model.column_metric import ColumnMetric
+from src.model.table_info import TableInfoMySQL
+from src.model.column_info import ColumnInfoMySQL
+from src.model.metric_info import MetricInfoMySQL
+from src.model.column_metric import ColumnMetricMySQL
 
-__all__ = ["TableInfo", "ColumnInfo", "MetricInfo", "ColumnMetric"]
+__all__ = ["TableInfoMySQL", "ColumnInfoMySQL", "MetricInfoMySQL", "ColumnMetricMySQL"]

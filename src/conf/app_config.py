@@ -34,6 +34,8 @@ class DBConfig:
     user: str
     password: str
     database: str
+    pool_size: int = 5
+    max_overflow: int = 10
 
 
 @dataclass
@@ -75,5 +77,9 @@ class AppConfig:
     llm: LLMConfig
 
 
-config_file = Path(__file__).parents[2] / "conf" / "app_config.yaml"
-app_config: AppConfig = load_config(config_file, AppConfig)
+config_path = Path(__file__).parents[2] / "conf" / "app_config.yaml"
+
+try:
+    app_config: AppConfig = load_config(config_path, AppConfig)
+except Exception as e:
+    raise RuntimeError(f"Failed to load app_config from {config_path}: {e}") from e

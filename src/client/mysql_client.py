@@ -22,7 +22,8 @@ class MySQLClientManager:
         if self._engine is None:
             try:
                 self._engine = create_async_engine(
-                    self._get_url(), echo=False, pool_pre_ping=True
+                    self._get_url(), echo=False, pool_pre_ping=True,
+                    pool_size=self.config.pool_size, max_overflow=self.config.max_overflow
                 )
                 self._session_factory = async_sessionmaker(
                     self._engine, expire_on_commit=False
@@ -49,14 +50,17 @@ class MySQLClientManager:
 
     async def close(self):
         if self._engine is not None:
-            await self._engine.dispose()
+            engine = self._engine
+            session_factory = self._session_factory
             self._engine = None
             self._session_factory = None
-            logger.info("MySQL connection closed")
+            await engine.dispose(close=True)
+            logger.info(f"MySQL connection closed: {self.config.database}")
 
 
 if __name__ == "__main__":
     import asyncio
+    from sqlalchemy import select
 
     async def test_mysql_client():
         from src.conf.app_config import app_config
