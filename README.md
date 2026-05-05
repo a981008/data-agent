@@ -37,111 +37,52 @@ docker-compose up -d
 
 ```
 src/
-├── client/          # 各服务的客户端封装
-│   ├── mysql_client.py       # MySQL ORM 客户端
-│   ├── embedding_client.py   # Embedding 服务客户端
-│   ├── es_client.py          # Elasticsearch 客户端
-│   └── milvus_client.py      # Milvus 向量数据库客户端
-├── conf/           # 配置模块
-│   ├── app_config.py         # 应用配置（DBConfig, MilvusConfig 等）
-│   └── config_loader.py       # YAML 配置加载器
-├── model/          # ORM 模型（meta 库）
-│   ├── table_info.py          # 表元数据
-│   ├── column_info.py         # 列元数据
-│   ├── metric_info.py         # 指标信息
-│   └── column_metric.py       # 列-指标关联
-└── core/           # 核心模块
-    └── log.py               # 日志封装
+├── client/              # 服务客户端封装
+│   ├── mysql_client.py      # MySQL ORM 客户端
+│   ├── embedding_client.py  # Embedding 服务客户端
+│   ├── es_client.py         # Elasticsearch 客户端
+│   └── milvus_client.py     # Milvus 向量数据库客户端
+├── conf/               # 配置模块
+│   ├── app_config.py        # 应用配置（DBConfig, MilvusConfig 等）
+│   ├── config_loader.py     # YAML 配置加载器
+│   └── meta_config.py       # 元数据配置
+├── core/                # 核心模块
+│   └── log.py                # 日志封装
+├── entity/              # 数据实体
+│   └── meta_entity.py       # ColumnInfo, ColumnMetric, MetricInfo, TableInfo, ValueInfo
+├── model/               # ORM 模型（meta 库）
+│   ├── base.py              # SQLAlchemy 基类
+│   ├── table_info.py        # 表元数据 ORM
+│   ├── column_info.py       # 列元数据 ORM
+│   ├── metric_info.py       # 指标信息 ORM
+│   └── column_metric.py     # 列-指标关联 ORM
+├── repo/                # 数据访问层
+│   ├── meta_mysql_repository.py  # meta 库访问
+│   ├── dw_mysql_repository.py    # dw 库访问
+│   └── mapper.py                  # 数据映射
+├── service/             # 业务逻辑层
+│   └── meta_knowledge_service.py  # 元数据知识服务
+└── script/              # 独立脚本
+    └── build_meta_knowledge.py    # 构建元数据知识库
 ```
 
-## 客户端使用示例
+## 初始化配置
 
 ### MySQL
 
-```python
-from src.client.mysql_client import MySQLClientManager
-from src.conf.app_config import app_config
-
-# 查询 dw 库
-async with MySQLClientManager(app_config.db_dw) as mysql_client:
-    sf = mysql_client.session()
-    async with sf() as session:
-        result = await session.execute(text("SELECT COUNT(*) FROM fact_order"))
-        print(f"订单总数: {result.scalar()}")
-
-# 查询 meta 库
-async with MySQLClientManager(app_config.db_meta) as mysql_client:
-    sf = mysql_client.session()
-    async with sf() as session:
-        result = await session.execute(text("SHOW TABLES"))
-        print(f"表列表: {[r[0] for r in result.fetchall()]}")
-```
-
-### Embedding
-
-```python
-from src.client.embedding_client import EmbeddingClientManager
-from src.conf.app_config import app_config
-
-async with EmbeddingClientManager(app_config.embedding) as manager:
-    client = manager.client()
-    response = await client.post("/embeddings", json={"input": "今天天气不错"})
-    result = response.json()
-    embedding = result["data"][0]["embedding"]
-    print(f"向量维度: {len(embedding)}")
-```
-
-### Elasticsearch
-
-```python
-from src.client.es_client import ESClientManager
-from src.conf.app_config import app_config
-
-async with ESClientManager(app_config.es) as manager:
-    client = manager.client()
-    health = await client.cluster.health()
-    print(f"集群状态: {health['status']}")
-    # 创建索引、插入文档、搜索等
-```
-
-### Milvus
-
-```python
-from src.client.milvus_client import MilvusClientManager
-from src.conf.app_config import app_config
-
-async with MilvusClientManager(app_config.milvus) as manager:
-    client = manager.client()
-    # 创建集合、插入向量、相似度搜索等
-```
-
-## 初始化
-
-### MySQL 配置
-
-MySQL 容器启动时自动执行 `docker/mysql` 目录下的 SQL 脚本进行数据库初始化。
-
-docker-compose.yaml 中配置了挂载：
-
-```yaml
-volumes:
-    - ./mysql:/docker-entrypoint-initdb.d
-```
-
-`docker-entrypoint-initdb.d` 是 MySQL 官方镜像保留的初始化目录，容器首次启动时自动执行该目录下的 `.sql`、`.sql.gz`、`.sh` 脚本，按文件名升序执行。
+MySQL 容器启动时自动执行 `docker/mysql` 目录下的 SQL 脚本：
 
 | 文件 | 顺序 | 作用 |
 |------|------|------|
-| `01-dw.sql` | 1 | 创建 `dw` 数据库及事实/维度表（fact_order, dim_customer 等） |
-| `02-meta.sql` | 2 | 创建 `meta` 数据库及元数据表（table_info, column_info 等） |
-| `03-grant.sh` | 3 | 授权 应用用户访问 `dw` 和 `meta` 数据库 |
+| `01-dw.sql` | 1 | 创建 `dw` 数据库及事实/维度表 |
+| `02-meta.sql` | 2 | 创建 `meta` 数据库及元数据表 |
+| `03-grant.sh` | 3 | 授权应用用户访问 `dw` 和 `meta` 数据库 |
 
-### Milvus 配置
+### Milvus
 
-Milvus 使用嵌入式 etcd，配置文件位于 `docker/milvus/` 目录：
-
-- **embedEtcd.yaml**: 嵌入式 etcd 配置
-- **user.yaml**: 自定义覆盖配置
+配置文件位于 `docker/milvus/`：
+- **embedEtcd.yaml** — 嵌入式 etcd 配置
+- **user.yaml** — 自定义覆盖配置
 
 ## 服务管理
 
@@ -150,45 +91,25 @@ Milvus 使用嵌入式 etcd，配置文件位于 `docker/milvus/` 目录：
 docker-compose up -d
 
 # 启动指定服务
-docker-compose up -d mysql
-docker-compose up -d elasticsearch
-docker-compose up -d embedding
-docker-compose up -d milvus
+docker-compose up -d mysql elasticsearch milvus
 
 # 停止服务
 docker-compose stop
 
-# 销毁服务（删除容器，数据卷保留）
+# 销毁服务（保留数据卷）
 docker-compose down
 
-# 销毁服务（删除容器和数据卷）
+# 销毁服务（删除数据卷）
 docker-compose down -v
 ```
 
 ## 服务访问
 
-- **MySQL**: localhost:3306
-- **Elasticsearch**: http://localhost:9200
-- **Kibana**: http://localhost:5601
-- **Embedding**: http://localhost:8081
-- **Milvus**: localhost:19530
-- **Attu**: http://localhost:3000
-
-## 单元测试
-
-```bash
-# 运行所有测试
-pytest tests/ -v
-
-# 运行指定测试文件
-pytest tests/model/test_meta_models.py -v
-
-# 运行指定测试类
-pytest tests/model/test_meta_models.py::TestColumnInfo -v
-```
-
-### 测试覆盖
-
-| 文件 | 覆盖模块 |
-|------|----------|
-| tests/model/test_meta_models.py | TableInfo, ColumnInfo, MetricInfo, ColumnMetric ORM 及关系 |
+| 服务 | 地址 |
+|------|------|
+| MySQL | localhost:3306 |
+| Elasticsearch | http://localhost:9200 |
+| Kibana | http://localhost:5601 |
+| Embedding | http://localhost:8081 |
+| Milvus | localhost:19530 |
+| Attu | http://localhost:3000 |
