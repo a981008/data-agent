@@ -37,7 +37,7 @@ class DBConfig:
 
 
 @dataclass
-class QdrantConfig:
+class MilvusConfig:
     host: str
     port: int
     embedding_size: int
@@ -69,7 +69,7 @@ class AppConfig:
     logging: LoggingConfig
     db_meta: DBConfig
     db_dw: DBConfig
-    qdrant: QdrantConfig
+    milvus: MilvusConfig
     embedding: EmbeddingConfig
     es: ESConfig
     llm: LLMConfig
