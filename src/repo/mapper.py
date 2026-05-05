@@ -18,3 +18,8 @@ class Mapper:
     def to_model(entity, model_cls: type[T]) -> T:
         """Convert entity (dataclass) to SQLAlchemy model."""
         return model_cls(**asdict(entity))
+
+    @staticmethod
+    def to_dict(entity) -> dict:
+        """Convert entity (dataclass) to plain dict."""
+        return asdict(entity)

@@ -43,6 +43,22 @@ class EmbeddingClientManager:
             self._client = None
             logger.info("Embedding connection closed")
 
+    async def embed_batch(self, texts: list[str], batch_size=20) -> list[list[float]]:
+        if not texts:
+            return []
+
+        client = self.client()
+        all_embeddings = []
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i : i + batch_size]
+            response = await client.post(
+                "/embeddings",
+                json={"input": batch},
+            )
+            result = response.json()
+            all_embeddings.extend([item["embedding"] for item in result["data"]])
+        return all_embeddings
+
 
 if __name__ == "__main__":
     import asyncio
